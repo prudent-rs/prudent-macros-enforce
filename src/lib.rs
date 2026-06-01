@@ -5,7 +5,6 @@
 #[doc(hidden)]
 pub const CARGO_PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-// @TODO test with the feature and without
 #[cfg(feature = "use_with_prudent_only")]
 #[macro_export]
 #[doc(hidden)]

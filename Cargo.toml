@@ -1,6 +1,6 @@
 [package]
 name = "prudent-macros-enforce"
-version = "0.0.3"
+version = "0.0.4"
 
 # As of April 2026, prudent-macros-enforce does NOT need 2021 Rust Edition - 2018 is enough.
 edition = "2018"
