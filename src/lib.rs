@@ -20,24 +20,6 @@ macro_rules! potentially_check_prudent_version {
     () => {{}};
 }
 
-/// Generate path to `fun` under [expecting_unsafe_fn::arg], or [expecting_unsafe_fn::arg::arg], or
-/// [expecting_unsafe_fn::arg::arg::arg] etc, as appropriate for given number of argument(s).
-///
-/// Internal - NOT a part of public API.
-#[macro_export]
-#[doc(hidden)]
-macro_rules! expecting_unsafe_fn_path {
-    ( $( $arg:expr ),+ ) => {
-        $crate::expecting_unsafe_fn_path!( ~ { $( $arg ),+ }, ::prudent::backend::expecting_unsafe_fn )
-    };
-    ( ~ { $_arg_first:expr, $( $arg_rest:expr ),+ }, $( $path_part:tt )+ ) => {
-        $crate::expecting_unsafe_fn_path!( ~ { $( $arg_rest ),+ }, $( $path_part )+ ::arg )
-    };
-    ( ~ { $_arg_last:expr }, $( $path_part:tt )+ ) => {
-        $( $path_part )+ ::arg::fun
-    };
-}
-
 #[macro_export]
 macro_rules! unsafe_fn {
     ( $f:expr; $( $arg:expr ),+ ) => {
@@ -67,28 +49,6 @@ macro_rules! unsafe_fn {
                 */
                 let (tuple_tree, fun) = ($crate::unsafe_fn_internal_build_tuple_tree!{ $($arg),+ }, $f);
 
-                if false {
-                    /* Detect code where `unsafe_fn!` is not needed at all. Maybe the function used
-                       to be `unsafe`, but not anymore.
-
-                       Ensure that $fn is not safe, but `unsafe`. Using
-                       https://doc.rust-lang.org/reference/types/function-item.html#r-type.fn-item.coercion
-
-                       We CAN'T just use
-                       ```
-                       let _: unsafe fn(_, _,... ) -> _ = fun;
-                       ```
-                       (with the appropriate number of _ for arguments), because that would coerce a
-                       safe function into unsafe, and we would lose the ability to verify that it's
-                       indeed unsafe!
-                    */
-                    let _ = if false {
-                        $crate::expecting_unsafe_fn_path!( $( $arg ),+ )
-                    } else {
-                        fun
-                    };
-                    ::core::unreachable!()
-                }
                 $crate::unsafe_fn_internal_build_accessors_and_call! {
                     fun,
                     tuple_tree,
@@ -110,17 +70,6 @@ macro_rules! unsafe_fn {
                on its own without its own `unsafe{...}` block(s):
             */
             let fun = $f;
-            if false {
-                /* Ensure that $fn is not safe, but `unsafe`. Using
-                   https://doc.rust-lang.org/reference/types/function-item.html#r-type.fn-item.coercion
-                */
-                let _ = if false {
-                    ::prudent::backend::expecting_unsafe_fn::fun
-                } else {
-                    fun
-                };
-                ::core::unreachable!()
-            }
             let result = unsafe {
                 fun()
             };
@@ -251,13 +200,7 @@ macro_rules! code_assert_unsafe_methods {
            ```
         */
         let _ = OwnedReceiver::$method;
-        // @TODO
-        let _ = if false {
-            //@TODO
-            $crate::expecting_unsafe_fn_path!( first_goes_receiver $(, $arg )* )
-        } else {
-            OwnedReceiver::$method
-        };
+        // @TODO remove
         ::core::unreachable!();
     }};
 }
