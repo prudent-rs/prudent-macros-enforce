@@ -33,16 +33,6 @@ macro_rules! unsafe_fn {
             */
             {
                 $crate::potentially_check_prudent_version!();
-                /* Ensure that
-                   - $fn (the expression itself, one that yields the function to call) and
-                   - any arguments (expressions that yield values passed to the function to call)
-
-                   don't include any unnecessary `unsafe{...}` block(s):
-
-                   @TODO remove this #[deny(unused_unsafe)] ??? $f or any of $arg could be a result
-                   of unsafe_method!(...) that itself MAY have "unused_unsafe" in $self!!!
-                */
-                #[deny(unused_unsafe)]
                 /* Ensure that $fn (the expression itself) and any arguments (expressions) don't
                    include any unsafe code/calls/casts on their  own without their own `unsafe{...}`
                    block(s).
@@ -61,10 +51,6 @@ macro_rules! unsafe_fn {
     ($f:expr) => {
         ({
             $crate::potentially_check_prudent_version!();
-            /* Ensure that $fn (the expression itself, one that yields a function to call) doesn't
-               include an unnecessary `unsafe{...}` block:
-             @TODO remove this #[deny(unused_unsafe)]
-            */
             #[deny(unused_unsafe)]
             /* Ensure that $fn (the expression itself) doesn't include any unsafe code/calls/casts
                on its own without its own `unsafe{...}` block(s):
@@ -122,8 +108,6 @@ macro_rules! unsafe_fn_internal_build_accessors_and_call {
       ),*
     ) => {
         #[allow(unsafe_code)]
-        // @TODO remove this #[deny(unused_unsafe)]
-        #[deny(unused_unsafe)]
         unsafe {
             $fn( $(
                     $crate::unsafe_fn_internal_access_tuple_tree_field!{ $tuple_tree, $($accessor_part),+ }
@@ -171,40 +155,6 @@ macro_rules! unsafe_method {
 }
 //----------------------
 
-#[cfg(not(feature = "assert_unsafe_methods"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! code_assert_unsafe_methods {
-    (
-        $owned_receiver:expr =>. $method:ident => $( $arg:expr ),*
-     ) => {};
-}
-// See also README.md > Related issues >
-// [rust-lang/rust#88531](https://github.com/rust-lang/rust/issues/88531) No way to get compile-time
-// info from the type of local.
-#[cfg(feature = "assert_unsafe_methods")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! code_assert_unsafe_methods {
-    (
-        $owned_receiver:expr =>. $method:ident => $( $arg:expr ),*
-     ) => {{
-        type OwnedReceiver = impl Sized;
-        let _: &OwnedReceiver = &$owned_receiver;
-        /* Detect code where `unsafe_method!` is not needed at all. Maybe the method used
-           to be `unsafe`, but not anymore.
-
-           See unsafe_fn for why we can't just use simple coercion like:
-           ```
-           let _: unsafe fn(_, _,... ) -> _ = OwnedReceiver::$method;
-           ```
-        */
-        let _ = OwnedReceiver::$method;
-        // @TODO remove
-        ::core::unreachable!();
-    }};
-}
-
 /// Detect code where `unsafe_method!` is not needed at all. Maybe the method used to be `unsafe`,
 /// but not anymore.
 ///
@@ -238,7 +188,7 @@ macro_rules! unsafe_method_assert_unsafe_methods {
                 let mut owned_receiver = owned_receiver;
 
                 if false {
-                    $crate::code_assert_unsafe_methods!(owned_receiver =>. $method => $( $arg ),*);
+                    //$crate::code_assert_unsafe_methods!(owned_receiver =>. $method => $( $arg ),*);
                 }
                 // @TODO double check and remove:
                 #[deny(unused_unsafe)]
