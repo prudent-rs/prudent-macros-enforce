@@ -190,8 +190,6 @@ macro_rules! unsafe_method_assert_unsafe_methods {
                 if false {
                     //$crate::code_assert_unsafe_methods!(owned_receiver =>. $method => $( $arg ),*);
                 }
-                // @TODO double check and remove:
-                #[deny(unused_unsafe)]
                 let _ = unsafe { owned_receiver. $method( $( $arg ),* ) };
                 ::core::unreachable!()
             } else {
@@ -290,8 +288,6 @@ macro_rules! unsafe_static_set {
         }
     }};
     // @TODO implement + rename, so it's for union fields, too:
-    //
-    // @TODO similar to read union fields
     ($stat:ident { $( $suffix:tt )* } $val:expr) => {{}};
     ($stat:path { $( $suffix:tt )* } $val:expr) => {{
         $crate::potentially_check_prudent_version!();
