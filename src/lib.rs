@@ -25,7 +25,7 @@ macro_rules! potentially_check_prudent_version {
 /// any outer values if it wishes. The given code will not be executed.
 #[macro_export]
 #[doc(hidden)]
-macro_rules! ensure_compiles_as_final {
+macro_rules! ensure_compiles {
     ($( $code:tt )*) => {
         {
             if false {
@@ -183,7 +183,7 @@ macro_rules! unsafe_method_assert_unsafe_methods {
         $self:expr =>. $method:ident => $( $arg:expr ),*
      ) => {
         ({// @TODO remove this pair of ({ ... )} and unindent the inner code (??):
-            $crate::ensure_compiles_as_final! {
+            $crate::ensure_compiles! {
                 /*
                 // "Make" an owned_receiver, an instance/owned value of the same type as $self. (Of
                 // course, the instance is invalid - this is for compile-time checks only, hence `if
@@ -291,7 +291,7 @@ macro_rules! unsafe_static_set {
     //@TODO?? #stat:ident
     ($stat:path, $val:expr) => {{
         $crate::potentially_check_prudent_version!();
-        $crate::ensure_compiles_as_final! {
+        $crate::ensure_compiles! {
             let _ = $val;
         }
         unsafe {
@@ -303,7 +303,7 @@ macro_rules! unsafe_static_set {
     ($stat:ident { $( $suffix:tt )* } $val:expr) => {{}};
     ($stat:path { $( $suffix:tt )* } $val:expr) => {{
         $crate::potentially_check_prudent_version!();
-        $crate::ensure_compiles_as_final! {
+        $crate::ensure_compiles! {
             let mptr = &raw mut $stat;
             let mref = unsafe { &mut *mptr };
         }
@@ -463,7 +463,7 @@ macro_rules! unsafe_use {
 macro_rules! unsafe_set {
     ($ptr:expr, $value:expr) => {{
         $crate::potentially_check_prudent_version!();
-        $crate::ensure_compiles_as_final! {
+        $crate::ensure_compiles! {
             let _: *mut _ = $ptr;
             let _ = $value;
         }
