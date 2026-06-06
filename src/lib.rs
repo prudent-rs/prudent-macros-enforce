@@ -20,6 +20,24 @@ macro_rules! potentially_check_prudent_version {
     () => {{}};
 }
 
+/// Ensure that the given code compiles if it were "final", so if there were no code after it
+/// (except for `unreachable!()` or similar way to invoke panic.) That means the given code MAY MOVE
+/// any outer values if it wishes. The given code will not be executed.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! ensure_compiles_as_final {
+    ($( $code:tt )*) => {
+        {
+            if false {
+                let _ = {
+                    $( $code )*
+                };
+                ::core::unreachable!();
+            }
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! unsafe_fn {
     ( $f:expr; $( $arg:expr ),+ ) => {
@@ -51,7 +69,6 @@ macro_rules! unsafe_fn {
     ($f:expr) => {
         ({
             $crate::potentially_check_prudent_version!();
-            #[deny(unused_unsafe)]
             /* Ensure that $fn (the expression itself) doesn't include any unsafe code/calls/casts
                on its own without its own `unsafe{...}` block(s):
             */
@@ -165,8 +182,8 @@ macro_rules! unsafe_method_assert_unsafe_methods {
     (
         $self:expr =>. $method:ident => $( $arg:expr ),*
      ) => {
-        (// @TODO remove this pair of (...) and unindent the inner code:
-            if false {
+        ({// @TODO remove this pair of ({ ... )} and unindent the inner code (??):
+            $crate::ensure_compiles_as_final! {
                 /*
                 // "Make" an owned_receiver, an instance/owned value of the same type as $self. (Of
                 // course, the instance is invalid - this is for compile-time checks only, hence `if
@@ -187,17 +204,13 @@ macro_rules! unsafe_method_assert_unsafe_methods {
                 #[allow(unused_mut)] // in case the method takes &mut self, or &self.
                 let mut owned_receiver = owned_receiver;
 
-                if false {
-                    //$crate::code_assert_unsafe_methods!(owned_receiver =>. $method => $( $arg ),*);
-                }
+                if false {}//$crate::code_assert_unsafe_methods!(owned_receiver =>. $method => $( $arg ),*);
                 let _ = unsafe { owned_receiver. $method( $( $arg ),* ) };
-                ::core::unreachable!()
-            } else {
-                $crate::unsafe_method_internal_check_args_etc!(
-                    $self, $method $(, $arg )*
-                )
             }
-        )
+            $crate::unsafe_method_internal_check_args_etc!(
+                $self, $method $(, $arg )*
+            )
+        })
      }
 }
 
@@ -275,30 +288,64 @@ macro_rules! unsafe_method_internal_build_accessors_check_args_call {
 
 #[macro_export]
 macro_rules! unsafe_static_set {
+    //@TODO?? #stat:ident
     ($stat:path, $val:expr) => {{
         $crate::potentially_check_prudent_version!();
-        if false {
+        $crate::ensure_compiles_as_final! {
             let _ = $val;
-            ::core::unreachable!()
-        } else {
-            #[allow(unsafe_code)]
-            unsafe {
-                $stat = $val;
-            }
+        }
+        unsafe {
+            $stat = $val;
         }
     }};
-    // @TODO implement + rename, so it's for union fields, too:
+
+    // $suffix is for example an array index, or a (sub)field
     ($stat:ident { $( $suffix:tt )* } $val:expr) => {{}};
     ($stat:path { $( $suffix:tt )* } $val:expr) => {{
         $crate::potentially_check_prudent_version!();
-        if false {
+        $crate::ensure_compiles_as_final! {
             let mptr = &raw mut $stat;
             let mref = unsafe { &mut *mptr };
-            ::core::unreachable!()
-        } else {
-            //@TODO
         }
+        //@TODO
     }};
+}
+
+// @TODO unsafe_static_get
+
+// @TODO unsafe_static_ref
+//
+//  #[allow(static_mut_refs)]
+//  let _r = unsafe { &S };
+//
+// @TODO unsafe_static_mut
+//
+//    #[allow(static_mut_refs)]
+//    let _m = unsafe { &mut S };
+
+#[macro_export]
+macro_rules! unsafe_union_get {
+    () => {
+        //@TODO
+    };
+}
+#[macro_export]
+macro_rules! unsafe_union_set {
+    () => {
+        //@TODO
+    };
+}
+#[macro_export]
+macro_rules! unsafe_union_ref {
+    () => {
+        //@TODO
+    };
+}
+#[macro_export]
+macro_rules! unsafe_union_mut {
+    () => {
+        //@TODO
+    };
 }
 
 #[macro_export]
@@ -416,15 +463,12 @@ macro_rules! unsafe_use {
 macro_rules! unsafe_set {
     ($ptr:expr, $value:expr) => {{
         $crate::potentially_check_prudent_version!();
-        if false {
+        $crate::ensure_compiles_as_final! {
             let _: *mut _ = $ptr;
             let _ = $value;
-            ::core::unreachable!()
-        } else {
-            #[allow(unsafe_code)]
-            unsafe {
-                *$ptr = $value;
-            }
+        }
+        unsafe {
+            *$ptr = $value;
         }
     }};
 }
